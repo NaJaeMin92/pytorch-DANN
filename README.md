@@ -31,3 +31,9 @@ DANN
 
 1. MNIST and MNIST-M feature distributions
 ![input_tsne_plot](https://user-images.githubusercontent.com/37066691/44933136-ffa34f00-ada2-11e8-8135-b78534c0d660.png)
+
+2. Source only
+![image](https://user-images.githubusercontent.com/37066691/44933190-36796500-ada3-11e8-8d3c-c4d3aa3dbe16.png)
+
+3. Domain adaptation (DANN)
+![image](https://user-images.githubusercontent.com/37066691/44933227-527d0680-ada3-11e8-9eb9-239b01513d3d.png)
