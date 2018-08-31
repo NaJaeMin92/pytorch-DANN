@@ -18,7 +18,7 @@ pytorch 0.4.1
 ### Results
 `MNIST -> MNIST-M`
 
-![thiswork](https://user-images.githubusercontent.com/37066691/44932967-55c3c280-ada2-11e8-80b2-99a22b9aed86.png)
+![thiswork](https://user-images.githubusercontent.com/37066691/44933106-db477280-ada2-11e8-8022-6306579a1919.png)
 
 Result of this work is from avg(five tests below).
 
@@ -29,3 +29,5 @@ Source only
 DANN
 ![dann](https://user-images.githubusercontent.com/37066691/44932883-08dfec00-ada2-11e8-8f32-fd6afe044224.png)
 
+1. MNIST and MNIST-M feature distributions
+![input_tsne_plot](https://user-images.githubusercontent.com/37066691/44933136-ffa34f00-ada2-11e8-8135-b78534c0d660.png)
