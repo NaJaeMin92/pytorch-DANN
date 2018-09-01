@@ -100,8 +100,8 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
             optimizer = utils.optimizer_scheduler(optimizer=optimizer, p=p)
             optimizer.zero_grad()
 
-            combined_feature, combined_middle_feature = encoder(combined_image)
-            source_feature, source_middle_feature = encoder(source_image)
+            combined_feature = encoder(combined_image)
+            source_feature = encoder(source_image)
 
             # 1.Classification loss
             class_pred = classifier(source_feature)
