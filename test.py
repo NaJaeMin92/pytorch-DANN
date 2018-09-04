@@ -25,7 +25,7 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
         source_image, source_label = Variable(source_image.cuda()), Variable(source_label.cuda())
         # source_domain_labels = Variable(torch.zeros((source_image.size()[0])).type(torch.LongTensor).cuda())
         source_image = torch.cat((source_image, source_image, source_image), 1)  # MNIST convert to 3 channel
-        source_feature, _ = encoder(source_image)
+        source_feature = encoder(source_image)
         source_output = classifier(source_feature)
         source_pred = source_output.data.max(1, keepdim=True)[1]
         source_correct += source_pred.eq(source_label.data.view_as(source_pred)).cpu().sum()
@@ -34,7 +34,7 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
         target_image, target_label = target_data
         target_image, target_label = Variable(target_image.cuda()), Variable(target_label.cuda())
         # target_domain_labels = Variable(torch.zeros((target_image.size()[1])).type(torch.LongTensor).cuda())
-        target_feature, _ = encoder(target_image)
+        target_feature = encoder(target_image)
         target_output = classifier(target_feature)
         target_pred = target_output.data.max(1, keepdim=True)[1]
         target_correct += target_pred.eq(target_label.data.view_as(target_pred)).cpu().sum()
@@ -45,8 +45,7 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
             domain_source_labels = torch.zeros(source_label.shape[0]).type(torch.LongTensor)
             domain_target_labels = torch.ones(target_label.shape[0]).type(torch.LongTensor)
             domain_combined_label = torch.cat((domain_source_labels, domain_target_labels), 0).cuda()
-            domain_feature, _ \
-                = encoder(combined_image)
+            domain_feature = encoder(combined_image)
             domain_output = discriminator(domain_feature, alpha)
             domain_pred = domain_output.data.max(1, keepdim=True)[1]
             domain_correct += domain_pred.eq(domain_combined_label.data.view_as(domain_pred)).cpu().sum()
