@@ -1,5 +1,4 @@
 import torch
-from torch.autograd import Variable
 import numpy as np
 
 
@@ -17,13 +16,12 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
     target_correct = 0
 
     for batch_idx, (source_data, target_data) in enumerate(zip(source_test_loader, target_test_loader)):
-        p = float(batch_idx) / len(source_test_loader) 
+        p = float(batch_idx) / len(source_test_loader)
         alpha = 2. / (1. + np.exp(-10 * p)) - 1
 
         # 1. Source input -> Source Classification
         source_image, source_label = source_data
-        source_image, source_label = Variable(source_image.cuda()), Variable(source_label.cuda())
-        # source_domain_labels = Variable(torch.zeros((source_image.size()[0])).type(torch.LongTensor).cuda())
+        source_image, source_label = source_image.cuda(), source_label.cuda()
         source_image = torch.cat((source_image, source_image, source_image), 1)  # MNIST convert to 3 channel
         source_feature = encoder(source_image)
         source_output = classifier(source_feature)
@@ -32,8 +30,7 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
 
         # 2. Target input -> Target Classification
         target_image, target_label = target_data
-        target_image, target_label = Variable(target_image.cuda()), Variable(target_label.cuda())
-        # target_domain_labels = Variable(torch.zeros((target_image.size()[1])).type(torch.LongTensor).cuda())
+        target_image, target_label = target_image.cuda(), target_label.cuda()
         target_feature = encoder(target_image)
         target_output = classifier(target_feature)
         target_pred = target_output.data.max(1, keepdim=True)[1]
@@ -58,9 +55,7 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
             format(
             source_correct, len(source_test_loader.dataset), 100. * source_correct / len(source_test_loader.dataset),
             target_correct, len(target_test_loader.dataset), 100. * target_correct / len(target_test_loader.dataset),
-            domain_correct, len(source_test_loader.dataset) + len(target_test_loader.dataset), 100. * domain_correct / (
-                                                                         len(source_test_loader.dataset) + len(
-                                                                     target_test_loader.dataset))
+            domain_correct, len(source_test_loader.dataset) + len(target_test_loader.dataset), 100. * domain_correct / (len(source_test_loader.dataset) + len(target_test_loader.dataset))
         ))
     else:
         print("Test results on source_only :")
