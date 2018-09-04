@@ -53,13 +53,13 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
               'Target Accuracy: {}/{} ({:.2f}%)\n'
               'Domain Accuracy: {}/{} ({:.2f}%)\n'.
             format(
-            source_correct, len(source_test_loader.dataset), 100. * source_correct / len(source_test_loader.dataset),
-            target_correct, len(target_test_loader.dataset), 100. * target_correct / len(target_test_loader.dataset),
-            domain_correct, len(source_test_loader.dataset) + len(target_test_loader.dataset), 100. * domain_correct / (len(source_test_loader.dataset) + len(target_test_loader.dataset))
+            source_correct, len(source_test_loader.dataset), 100. * source_correct.item() / len(source_test_loader.dataset),
+            target_correct, len(target_test_loader.dataset), 100. * target_correct.item() / len(target_test_loader.dataset),
+            domain_correct, len(source_test_loader.dataset) + len(target_test_loader.dataset), 100. * domain_correct.item() / (len(source_test_loader.dataset) + len(target_test_loader.dataset))
         ))
     else:
         print("Test results on source_only :")
         print('\nSource Accuracy: {}/{} ({:.2f}%)\n'
               'Target Accuracy: {}/{} ({:.2f}%)\n'.format(
-            source_correct, len(source_test_loader.dataset), 100. * source_correct / len(source_test_loader.dataset),
-            target_correct, len(target_test_loader.dataset), 100. * target_correct / len(target_test_loader.dataset)))
+            source_correct, len(source_test_loader.dataset), 100. * source_correct.item() / len(source_test_loader.dataset),
+            target_correct, len(target_test_loader.dataset), 100. * target_correct.item() / len(target_test_loader.dataset)))
