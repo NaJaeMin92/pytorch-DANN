@@ -28,18 +28,18 @@ def source_only(encoder, classifier, discriminator, source_train_loader, target_
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-
+        
+        optimizer = optim.SGD(
+            list(encoder.parameters()) +
+            list(classifier.parameters()),
+            lr=0.01, momentum=0.9)
+        
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
             source_image, source_label = source_data
             p = float(batch_idx + start_steps) / total_steps
 
             source_image = torch.cat((source_image, source_image, source_image), 1)  # MNIST convert to 3 channel
             source_image, source_label = source_image.cuda(), source_label.cuda()  # 32
-
-            optimizer = optim.SGD(
-                list(encoder.parameters()) +
-                list(classifier.parameters()),
-                lr=0.01, momentum=0.9)
 
             optimizer = utils.optimizer_scheduler(optimizer=optimizer, p=p)
             optimizer.zero_grad()
@@ -75,7 +75,14 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-
+        
+        optimizer = optim.SGD(
+            list(encoder.parameters()) +
+            list(classifier.parameters()) +
+            list(discriminator.parameters()),
+            lr=0.01,
+            momentum=0.9)
+        
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
 
             source_image, source_label = source_data
@@ -89,13 +96,6 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
             source_image, source_label = source_image.cuda(), source_label.cuda()
             target_image, target_label = target_image.cuda(), target_label.cuda()
             combined_image = torch.cat((source_image, target_image), 0)
-
-            optimizer = optim.SGD(
-                list(encoder.parameters()) +
-                list(classifier.parameters()) +
-                list(discriminator.parameters()),
-                lr=0.01,
-                momentum=0.9)
 
             optimizer = utils.optimizer_scheduler(optimizer=optimizer, p=p)
             optimizer.zero_grad()
