@@ -8,6 +8,7 @@ import mnist
 import mnistm
 from utils import save_model
 from utils import visualize
+from utils import set_model_mode
 import params
 
 # Source : 0, Target :1
@@ -15,24 +16,20 @@ source_test_loader = mnist.mnist_test_loader
 target_test_loader = mnistm.mnistm_test_loader
 
 
-def source_only(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name):
+def source_only(encoder, classifier, source_train_loader, target_train_loader, save_name):
     print("Source-only training")
+    classifier_criterion = nn.CrossEntropyLoss().cuda()
+    optimizer = optim.SGD(
+        list(encoder.parameters()) +
+        list(classifier.parameters()),
+        lr=0.01, momentum=0.9)
+    
     for epoch in range(params.epochs):
         print('Epoch : {}'.format(epoch))
-
-        encoder = encoder.train()
-        classifier = classifier.train()
-        discriminator = discriminator.train()
-
-        classifier_criterion = nn.CrossEntropyLoss().cuda()
+        set_model_mode('train', [encoder, classifier])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
-        optimizer = optim.SGD(
-            list(encoder.parameters()) +
-            list(classifier.parameters()),
-            lr=0.01, momentum=0.9)
         
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
             source_image, source_label = source_data
@@ -56,32 +53,30 @@ def source_only(encoder, classifier, discriminator, source_train_loader, target_
                 print('[{}/{} ({:.0f}%)]\tClass Loss: {:.6f}'.format(batch_idx * len(source_image), len(source_train_loader.dataset), 100. * batch_idx / len(source_train_loader), class_loss.item()))
 
         if (epoch + 1) % 10 == 0:
-            test.tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode='source_only')
-    save_model(encoder, classifier, discriminator, 'source', save_name)
+            test.tester(encoder, classifier, None, source_test_loader, target_test_loader, training_mode='source_only')
+    save_model(encoder, classifier, None, 'source', save_name)
     visualize(encoder, 'source', save_name)
 
 
 def dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name):
     print("DANN training")
+    
+    classifier_criterion = nn.CrossEntropyLoss().cuda()
+    discriminator_criterion = nn.CrossEntropyLoss().cuda()
+    
+    optimizer = optim.SGD(
+    list(encoder.parameters()) +
+    list(classifier.parameters()) +
+    list(discriminator.parameters()),
+    lr=0.01,
+    momentum=0.9)
+    
     for epoch in range(params.epochs):
         print('Epoch : {}'.format(epoch))
-
-        encoder = encoder.train()
-        classifier = classifier.train()
-        discriminator = discriminator.train()
-
-        classifier_criterion = nn.CrossEntropyLoss().cuda()
-        discriminator_criterion = nn.CrossEntropyLoss().cuda()
+        set_model_mode('train', [encoder, classifier, discriminator])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
-        optimizer = optim.SGD(
-            list(encoder.parameters()) +
-            list(classifier.parameters()) +
-            list(discriminator.parameters()),
-            lr=0.01,
-            momentum=0.9)
         
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
 
