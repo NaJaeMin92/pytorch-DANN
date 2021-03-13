@@ -213,3 +213,10 @@ def get_free_gpu():
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
     memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
     return np.argmax(memory_available)
+
+def set_model_mode(mode='train', models=None):
+    for model in models:
+        if mode == 'train':
+            model.train()
+        else:
+            model.eval()
