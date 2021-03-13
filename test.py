@@ -1,15 +1,17 @@
 import torch
 import numpy as np
-
+from utils import set_model_mode
 
 def tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode):
     print("Model test ...")
 
     encoder.cuda()
     classifier.cuda()
-
+    set_model_mode('eval', [encoder, classifier])
+    
     if training_mode == 'dann':
         discriminator.cuda()
+        set_model_mode('eval', [discriminator])
         domain_correct = 0
 
     source_correct = 0
