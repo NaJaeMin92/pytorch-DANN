@@ -19,7 +19,7 @@ def main():
         classifier = model.Classifier().cuda()
         discriminator = model.Discriminator().cuda()
 
-        train.source_only(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name)
+        train.source_only(encoder, classifier, source_train_loader, target_train_loader, save_name)
         train.dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name)
 
     else:
