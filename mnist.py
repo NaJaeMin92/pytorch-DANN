@@ -9,10 +9,14 @@ transform = transforms.Compose([transforms.ToTensor(),
                                                      (0.32780124, 0.32292358, 0.32056796)),
                                 ])
 
+transform_grayscale = transform = transforms.Compose([transforms.ToTensor(),
+                                transforms.Normalize((0.29730626,), (0.32780124,))
+                                ])
+
 mnist_train_dataset = datasets.MNIST(root='data/pytorch/MNIST', train=True, download=True,
                                      transform=transform)
 mnist_valid_dataset = datasets.MNIST(root='data/pytorch/MNIST', train=True, download=True,
-                                     transform=transforms)
+                                     transform=transform)
 mnist_test_dataset = datasets.MNIST(root='data/pytorch/MNIST', train=False, transform=transform)
 
 indices = list(range(len(mnist_train_dataset)))
