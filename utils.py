@@ -51,23 +51,22 @@ def one_hot_embedding(labels, num_classes=10):
     return y[labels]
 
 
-def save_model(encoder, classifier, discriminator, training_mode, save_name):
-    print('Save models ...')
-
+def save_model(encoder, classifier, discriminator, training_mode):
+    print('Saving models ...')
     save_folder = 'trained_models'
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
 
-    torch.save(encoder.state_dict(), 'trained_models/encoder_' + str(training_mode) + '_' + str(save_name) + '.pt')
-    torch.save(classifier.state_dict(), 'trained_models/classifier_' + str(training_mode) + '_' + str(save_name) + '.pt')
+    torch.save(encoder.state_dict(), 'trained_models/encoder_' + str(training_mode) + '.pt')
+    torch.save(classifier.state_dict(), 'trained_models/classifier_' + str(training_mode) + '.pt')
 
     if training_mode == 'dann':
-        torch.save(discriminator.state_dict(), 'trained_models/discriminator_' + str(training_mode) + '_' + str(save_name) + '.pt')
+        torch.save(discriminator.state_dict(), 'trained_models/discriminator_' + str(training_mode) + '.pt')
 
-    print('Model is saved !!!')
+    print('The model has been successfully saved!')
 
 
-def plot_embedding(X, y, d, training_mode, save_name):
+def plot_embedding(X, y, d, training_mode):
     x_min, x_max = np.min(X, 0), np.max(X, 0)
     X = (X - x_min) / (x_max - x_min)
     y = list(itertools.chain.from_iterable(y))
@@ -85,19 +84,17 @@ def plot_embedding(X, y, d, training_mode, save_name):
                  fontdict={'weight': 'bold', 'size': 9})
 
     plt.xticks([]), plt.yticks([])
-    if save_name is not None:
-        plt.title(save_name)
 
     save_folder = 'saved_plot'
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
 
-    fig_name = 'saved_plot/' + str(training_mode) + '_' + str(save_name) + '.png'
+    fig_name = 'saved_plot/' + str(training_mode) + '.png'
     plt.savefig(fig_name)
-    print('{} is saved'.format(fig_name))
+    print('{} has been successfully saved!'.format(fig_name))
 
 
-def visualize(encoder, training_mode, save_name):
+def visualize(encoder, training_mode):
     # Draw 512 samples in test_data
     source_test_loader = mnist.mnist_test_loader
     target_test_loader = mnistm.mnistm_test_loader
@@ -142,15 +139,14 @@ def visualize(encoder, training_mode, save_name):
     target_domain_list = torch.ones(512).type(torch.LongTensor)
     combined_domain_list = torch.cat((source_domain_list, target_domain_list), 0).cuda()
 
-    print("Extract features to draw T-SNE plot...")
+    print("Extracting features to draw t-SNE plot...")
     combined_feature = encoder(combined_img_list)  # combined_feature : 1024,2352
 
     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3000)
     dann_tsne = tsne.fit_transform(combined_feature.detach().cpu().numpy())
 
-    print('Draw plot ...')
-    save_name = save_name + '_' + str(training_mode)
-    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, training_mode, save_name)
+    print('Drawing t-SNE plot ...')
+    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, training_mode)
 
 
 def visualize_input():
@@ -197,22 +193,16 @@ def visualize_input():
     target_domain_list = torch.ones(512).type(torch.LongTensor)
     combined_domain_list = torch.cat((source_domain_list, target_domain_list), 0).cuda()
 
-    print("Extract features to draw T-SNE plot...")
+    print("Extracting features to draw t-SNE plot...")
     combined_feature = combined_img_list  # combined_feature : 1024,3,28,28
     combined_feature = combined_feature.view(1024, -1)  # flatten
     # print(type(combined_feature), combined_feature.shape)
 
     tsne = TSNE(perplexity=30, n_components=2, init='pca', n_iter=3000)
     dann_tsne = tsne.fit_transform(combined_feature.detach().cpu().numpy())
-    print('Draw plot ...')
-    save_name = 'input_tsne_plot'
-    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, 'input', 'mnist_n_mnistM')
+    print('Drawing t-SNE plot ...')
+    plot_embedding(dann_tsne, combined_label_list, combined_domain_list, 'input')
 
-
-def get_free_gpu():
-    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-    memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-    return np.argmax(memory_available)
 
 def set_model_mode(mode='train', models=None):
     for model in models:

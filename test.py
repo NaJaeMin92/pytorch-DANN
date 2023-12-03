@@ -1,15 +1,16 @@
 import torch
 import numpy as np
+
+from model import Discriminator
 from utils import set_model_mode
 
-def tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode):
-    print("Model test ...")
 
+def tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode):
     encoder.cuda()
     classifier.cuda()
     set_model_mode('eval', [encoder, classifier])
-    
-    if training_mode == 'dann':
+
+    if training_mode == 'DANN':
         discriminator.cuda()
         set_model_mode('eval', [discriminator])
         domain_correct = 0
@@ -21,47 +22,77 @@ def tester(encoder, classifier, discriminator, source_test_loader, target_test_l
         p = float(batch_idx) / len(source_test_loader)
         alpha = 2. / (1. + np.exp(-10 * p)) - 1
 
-        # 1. Source input -> Source Classification
-        source_image, source_label = source_data
-        source_image, source_label = source_image.cuda(), source_label.cuda()
-        source_image = torch.cat((source_image, source_image, source_image), 1)  # MNIST convert to 3 channel
-        source_feature = encoder(source_image)
-        source_output = classifier(source_feature)
-        source_pred = source_output.data.max(1, keepdim=True)[1]
-        source_correct += source_pred.eq(source_label.data.view_as(source_pred)).cpu().sum()
+        # Process source and target data
+        source_image, source_label = process_data(source_data, expand_channels=True)
+        target_image, target_label = process_data(target_data)
 
-        # 2. Target input -> Target Classification
-        target_image, target_label = target_data
-        target_image, target_label = target_image.cuda(), target_label.cuda()
-        target_feature = encoder(target_image)
-        target_output = classifier(target_feature)
-        target_pred = target_output.data.max(1, keepdim=True)[1]
-        target_correct += target_pred.eq(target_label.data.view_as(target_pred)).cpu().sum()
+        # Compute source and target predictions
+        source_pred = compute_output(encoder, classifier, source_image, alpha=None)
+        target_pred = compute_output(encoder, classifier, target_image, alpha=None)
 
-        if training_mode == 'dann':
-            # 3. Combined input -> Domain Classificaion
-            combined_image = torch.cat((source_image, target_image), 0)  # 64 = (S:32 + T:32)
-            domain_source_labels = torch.zeros(source_label.shape[0]).type(torch.LongTensor)
-            domain_target_labels = torch.ones(target_label.shape[0]).type(torch.LongTensor)
-            domain_combined_label = torch.cat((domain_source_labels, domain_target_labels), 0).cuda()
-            domain_feature = encoder(combined_image)
-            domain_output = discriminator(domain_feature, alpha)
-            domain_pred = domain_output.data.max(1, keepdim=True)[1]
-            domain_correct += domain_pred.eq(domain_combined_label.data.view_as(domain_pred)).cpu().sum()
+        # Update correct counts
+        source_correct += source_pred.eq(source_label.data.view_as(source_pred)).sum().item()
+        target_correct += target_pred.eq(target_label.data.view_as(target_pred)).sum().item()
 
-    if training_mode == 'dann':
-        print("Test Results on DANN :")
-        print('\nSource Accuracy: {}/{} ({:.2f}%)\n'
-              'Target Accuracy: {}/{} ({:.2f}%)\n'
-              'Domain Accuracy: {}/{} ({:.2f}%)\n'.
-            format(
-            source_correct, len(source_test_loader.dataset), 100. * source_correct.item() / len(source_test_loader.dataset),
-            target_correct, len(target_test_loader.dataset), 100. * target_correct.item() / len(target_test_loader.dataset),
-            domain_correct, len(source_test_loader.dataset) + len(target_test_loader.dataset), 100. * domain_correct.item() / (len(source_test_loader.dataset) + len(target_test_loader.dataset))
-        ))
+        if training_mode == 'DANN':
+            # Process combined images for domain classification
+            combined_image = torch.cat((source_image, target_image), 0)
+            domain_labels = torch.cat((torch.zeros(source_label.size(0), dtype=torch.long),
+                                       torch.ones(target_label.size(0), dtype=torch.long)), 0).cuda()
+
+            # Compute domain predictions
+            domain_pred = compute_output(encoder, discriminator, combined_image, alpha=alpha)
+            domain_correct += domain_pred.eq(domain_labels.data.view_as(domain_pred)).sum().item()
+
+    source_dataset_len = len(source_test_loader.dataset)
+    target_dataset_len = len(target_test_loader.dataset)
+
+    accuracies = {
+        "Source": {
+            "correct": source_correct,
+            "total": source_dataset_len,
+            "accuracy": calculate_accuracy(source_correct, source_dataset_len)
+        },
+        "Target": {
+            "correct": target_correct,
+            "total": target_dataset_len,
+            "accuracy": calculate_accuracy(target_correct, target_dataset_len)
+        }
+    }
+
+    if training_mode == 'DANN':
+        accuracies["Domain"] = {
+            "correct": domain_correct,
+            "total": source_dataset_len + target_dataset_len,
+            "accuracy": calculate_accuracy(domain_correct, source_dataset_len + target_dataset_len)
+        }
+
+    print_accuracy(training_mode, accuracies)
+
+
+def process_data(data, expand_channels=False):
+    images, labels = data
+    images, labels = images.cuda(), labels.cuda()
+    if expand_channels:
+        images = images.repeat(1, 3, 1, 1)  # Repeat channels to convert to 3-channel images
+    return images, labels
+
+
+def compute_output(encoder, classifier, images, alpha=None):
+    features = encoder(images)
+    if isinstance(classifier, Discriminator):
+        outputs = classifier(features, alpha)  # Domain classifier
     else:
-        print("Test results on source_only :")
-        print('\nSource Accuracy: {}/{} ({:.2f}%)\n'
-              'Target Accuracy: {}/{} ({:.2f}%)\n'.format(
-            source_correct, len(source_test_loader.dataset), 100. * source_correct.item() / len(source_test_loader.dataset),
-            target_correct, len(target_test_loader.dataset), 100. * target_correct.item() / len(target_test_loader.dataset)))
+        outputs = classifier(features)  # Category classifier
+    preds = outputs.data.max(1, keepdim=True)[1]
+    return preds
+
+
+def calculate_accuracy(correct, total):
+    return 100. * correct / total
+
+
+def print_accuracy(training_mode, accuracies):
+    print(f"Test Results on {training_mode}:")
+    for key, value in accuracies.items():
+        print(f"{key} Accuracy: {value['correct']}/{value['total']} ({value['accuracy']:.2f}%)")

@@ -16,21 +16,22 @@ source_test_loader = mnist.mnist_test_loader
 target_test_loader = mnistm.mnistm_test_loader
 
 
-def source_only(encoder, classifier, source_train_loader, target_train_loader, save_name):
-    print("Source-only training")
+def source_only(encoder, classifier, source_train_loader, target_train_loader):
+    print("Training with only the source dataset")
+
     classifier_criterion = nn.CrossEntropyLoss().cuda()
     optimizer = optim.SGD(
         list(encoder.parameters()) +
         list(classifier.parameters()),
         lr=0.01, momentum=0.9)
-    
+
     for epoch in range(params.epochs):
-        print('Epoch : {}'.format(epoch))
+        print(f"Epoch: {epoch}")
         set_model_mode('train', [encoder, classifier])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
+
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
             source_image, source_label = source_data
             p = float(batch_idx + start_steps) / total_steps
@@ -49,35 +50,38 @@ def source_only(encoder, classifier, source_train_loader, target_train_loader, s
 
             class_loss.backward()
             optimizer.step()
-            if (batch_idx + 1) % 50 == 0:
-                print('[{}/{} ({:.0f}%)]\tClass Loss: {:.6f}'.format(batch_idx * len(source_image), len(source_train_loader.dataset), 100. * batch_idx / len(source_train_loader), class_loss.item()))
+            if (batch_idx + 1) % 100 == 0:
+                total_processed = batch_idx * len(source_image)
+                total_dataset = len(source_train_loader.dataset)
+                percentage_completed = 100. * batch_idx / len(source_train_loader)
+                print(f'[{total_processed}/{total_dataset} ({percentage_completed:.0f}%)]\tClassification Loss: {class_loss.item():.4f}')
 
-        if (epoch + 1) % 10 == 0:
-            test.tester(encoder, classifier, None, source_test_loader, target_test_loader, training_mode='source_only')
-    save_model(encoder, classifier, None, 'source', save_name)
-    visualize(encoder, 'source', save_name)
+        test.tester(encoder, classifier, None, source_test_loader, target_test_loader, training_mode='Source_only')
+
+    save_model(encoder, classifier, None, 'Source-only')
+    visualize(encoder, 'Source-only')
 
 
-def dann(encoder, classifier, discriminator, source_train_loader, target_train_loader, save_name):
-    print("DANN training")
-    
+def dann(encoder, classifier, discriminator, source_train_loader, target_train_loader):
+    print("Training with the DANN adaptation method")
+
     classifier_criterion = nn.CrossEntropyLoss().cuda()
     discriminator_criterion = nn.CrossEntropyLoss().cuda()
-    
+
     optimizer = optim.SGD(
-    list(encoder.parameters()) +
-    list(classifier.parameters()) +
-    list(discriminator.parameters()),
-    lr=0.01,
-    momentum=0.9)
-    
+        list(encoder.parameters()) +
+        list(classifier.parameters()) +
+        list(discriminator.parameters()),
+        lr=0.01,
+        momentum=0.9)
+
     for epoch in range(params.epochs):
-        print('Epoch : {}'.format(epoch))
+        print(f"Epoch: {epoch}")
         set_model_mode('train', [encoder, classifier, discriminator])
 
         start_steps = epoch * len(source_train_loader)
         total_steps = params.epochs * len(target_train_loader)
-        
+
         for batch_idx, (source_data, target_data) in enumerate(zip(source_train_loader, target_train_loader)):
 
             source_image, source_label = source_data
@@ -114,12 +118,11 @@ def dann(encoder, classifier, discriminator, source_train_loader, target_train_l
             total_loss.backward()
             optimizer.step()
 
-            if (batch_idx + 1) % 50 == 0:
-                print('[{}/{} ({:.0f}%)]\tLoss: {:.6f}\tClass Loss: {:.6f}\tDomain Loss: {:.6f}'.format(
+            if (batch_idx + 1) % 100 == 0:
+                print('[{}/{} ({:.0f}%)]\tTotal Loss: {:.4f}\tClassification Loss: {:.4f}\tDomain Loss: {:.4f}'.format(
                     batch_idx * len(target_image), len(target_train_loader.dataset), 100. * batch_idx / len(target_train_loader), total_loss.item(), class_loss.item(), domain_loss.item()))
 
-        if (epoch + 1) % 10 == 0:
-            test.tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode='dann')
+        test.tester(encoder, classifier, discriminator, source_test_loader, target_test_loader, training_mode='DANN')
 
-    save_model(encoder, classifier, discriminator, 'source', save_name)
-    visualize(encoder, 'source', save_name)
+    save_model(encoder, classifier, discriminator, 'DANN')
+    visualize(encoder, 'DANN')
